@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+<script type="text/javascript">
+	var memory = new WebAssembly.Memory({initial:1, maximum:1});
+	
+	var fibo = new Uint32Array(memory.buffer);
+
+	WebAssembly
+		.instantiate(
+			Uint8Array.from(atob(
+				"AGFzbQEAAAABBQFgAAF/AgsBAmpzA21lbQIAAQMCAQAHDQEJZmlib25hY2NpAAAKNgE0AQN/QQAhAEEBIQFBASECA0AgAiAAIAE2AgAgAWogAiEBIQIgAEEEaiIAQfgASA0AC0EACw=="),
+				c=>c.charCodeAt(0)
+			),
+			{ js: { mem: memory } }
+		)
+		.then(
+			obj => {
+				obj.instance.exports.fibonacci();
+				for (var i=0; i<30; ++i) {
+					document.write(fibo[i] + "<br/>")
+				}
+			}
+		);
+</script>
+</body>
+</html>
