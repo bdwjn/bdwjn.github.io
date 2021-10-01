@@ -3,26 +3,15 @@
 <head><meta charset="utf-8"></head>
 <body>
 <script type="text/javascript">
-	var memory = new WebAssembly.Memory({initial:1, maximum:1});
-	
-	var fibo = new Uint32Array(memory.buffer);
-
 	WebAssembly
 		.instantiate(
-			Uint8Array.from(atob(
-				"AGFzbQEAAAABBQFgAAF/AgsBAmpzA21lbQIAAQMCAQAHDQEJZmlib25hY2NpAAAKNgE0AQN/QQAhAEEBIQFBASECA0AgAiAAIAE2AgAgAWogAiEBIQIgAEEEaiIAQfgASA0AC0EACw=="),
+			Uint8Array.from(
+				atob("AGFzbQEAAAABCQJgAX8AYAABfwIJAQJqcwJkdwAAAwIBAQcHAQNmaWIAAQopAScBAn9BASIAIQEDQCAAEAAgACABaiABIQAiAUGN4LfdAEgNAAtBAAs="),
 				c=>c.charCodeAt(0)
 			),
-			{ js: { mem: memory } }
+			{ js: { dw: x=>document.write(x+"\n") } }
 		)
-		.then(
-			obj => {
-				obj.instance.exports.fibonacci();
-				for (var i=0; i<30; ++i) {
-					document.write(fibo[i] + "<br/>")
-				}
-			}
-		);
+		.then( obj => { obj.instance.exports.fib(); } );
 </script>
 </body>
 </html>
