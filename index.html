@@ -9,7 +9,7 @@
 				atob("AGFzbQEAAAABCQJgAX8AYAABfwIJAQJqcwJkdwAAAwIBAQcHAQNmaWIAAQopAScBAn9BASIAIQEDQCAAEAAgACABaiABIQAiAUGN4LfdAEgNAAtBAAs="),
 				c=>c.charCodeAt(0)
 			),
-			{ js: { dw: x=>document.write(x+"\n") } }
+			{ js: { dw: x=>document.writeln(x) } }
 		)
 		.then( obj => { obj.instance.exports.fib(); } );
 </script>
