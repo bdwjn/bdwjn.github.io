@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Triste</title>
+<style>
+	html, body, canvas { margin:0;padding:0; background:black; overflow:hidden; width:100%; height: 100%; }
+	canvas {object-fit: contain; left:auto; right:auto; image-rendering:pixelated; }
+</style>
+<script>
+
+const tetris = {
+	WIDTH: 10, HEIGHT: 18
+};
+
+function init() {
+	tetris.canvas = document.getElementById("tetris");
+	tetris.ctx    = tetris.canvas.getContext("2d");
+	tetris.tick   = 0;
+	tetris.x      = 0;
+	tetris.y      = 0;
+
+	tetris.backdrop = document.createElement("canvas");
+	tetris.backdrop.width = 160;
+	tetris.backdrop.height = 144;
+
+	var scorenxtlv = Uint8Array.from(
+		atob("eMe+e+e/eeeee+/jj/wjzcnH2wwDnnwzzzwzWMwjzMHem++Genewzz+7MMwjzMeHnHzMnfHwz+wvcMwjzM4H/nzcnHnzz0wnyMwWee/+Geeceeeeez/jhM/M"),
+		c=>c.charCodeAt(0)
+	);
+
+	var c = tetris.backdrop.getContext("2d");
+	
+	var id = c.getImageData(0,0,160,144);
+	var p = id.data;
+
+	var idx=0;
+	for (y=0; y<144; y++) for (x=0; x<160; x++)
+	{
+		var col =
+			(x>15&&x<97?11
+			:x>104?x>108&&x<155&&(y>4&&y<19||y>44&&y<67||y>68&&y<101)
+			&&(x>109&&x<154||y>5&&y<18||y>45&&y<66||y>69&&y<100)?(x==110||x==153)
+			&&(y>6&&y<17||y>46&&y<65||y>70&&y<99)||x>110&&x<153
+			&&(y==6||y==17||y==46||y==65||y==70||y==99)||(x==111||x==152)
+			&&(y==7||y==16||y==47||y==64||y==71||y==98)?8:11:y>34||y<13?2:y<23
+			&&y!=21&&y!=13||y==33?5:11:x>7&&x<17||x>95&&x<104?
+				y%6==2||y%6==5||x%4==3-2*(y%6<3)?2:x%4==2&&y%6==0||x%4==0&&y%6==3?11:8:x<7?2:11)<<4;
+		p[idx++] = p[idx++] = p[idx++] = col; p[idx++] = 255;
+	}
+
+	var chars = [[10,11,12,13,14],[15,14,16,17],[18,14,19,14,18]];
+	for (r=0; r<3; r++)
+	for (l=0; l<chars[r].length; l++)
+	{
+		var ch = 6*chars[r][l];
+		idx = 113 + (r==0?9:r==1?73:49) * 160;
+		for (y=0; y<6; y++)
+		for (x=0; x<6; x++) {
+			var bit = ch+x+120*y;
+			var idx2 = 4*(8*l+idx+x+160*y);
+			if (scorenxtlv[~~(bit/8)]&(128>>(bit%8)))
+				p[idx2++] = p[idx2++] = p[idx2++] = 0x20;
+		}
+	}
+	
+	c.putImageData(id, 0,0);
+	
+	/* key handlers */
+	window.addEventListener("keydown", function(e) { tetris.key = e.key; }, true);
+	window.addEventListener("keyup", function(e) { if (e.key==tetris.key) tetris.key = 0; }, true);
+	
+	board = Array(tetris.WIDTH).fill().map(() => Array(tetris.HEIGHT).fill(0));
+
+	window.requestAnimationFrame(render);
+}
+
+function render(time) {
+	tetris.ctx.drawImage(tetris.backdrop,0,0);
+	//window.requestAnimationFrame(render);
+}
+
+</script>
+</head>
+<body onLoad="init()">
+	<canvas id="tetris" width="160" height="144"/>
+</body>
+</html>
