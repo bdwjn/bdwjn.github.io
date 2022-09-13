@@ -1,85 +1,53 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Triste</title>
+<html>
+<title>Tetris</title>
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwA
+	AEnQAABJ0Ad5mH3gAAAA8SURBVDhPY1AgEZCroYEIAFFJmYYNOABEFqKSGhogbAhAloWwB7sGCBsTIMtSpgE/gKgkVwPxgEQNCgoAeGr0gaidAEUAAAAASUVORK5CYII="/>
 <style>
-	html, body, canvas { margin:0;padding:0; background:black; overflow:hidden; width:100%; height: 100%; }
-	canvas {object-fit: contain; left:auto; right:auto; image-rendering:pixelated; }
+	html,body,canvas{background:black;padding:0;margin:0;overflow:hidden;width:100%;height:100%}
+	canvas{object-fit:contain;image-rendering:pixelated;left:auto;right:auto}img{display:none}
 </style>
+<canvas id="tetris" width="160" height="144"></canvas>
+<img id="data" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAB8CAAAAAD8uunUAAAIv0lEQVRYw+1Xz48cRxV+Vd09Ozs9Mzu7WeKd3WDXTLx
+	ehx8HkLBZbOyt2eyuE8eo/wQjyKUnXtubsAgJacYhByMFEQkJ5ZhDhDiA1AIOcMsBceIUceTg3OACK8WHSAQt36uq7unumdkxdhAIKG9NddXU++p773v1ekxJ2tTEhvUoGdrnYRI
+	puy+JEvyZRfo/wH8FgHrCRioyDfimjcbyespzOIyGWYuGAGCcPIBhmwNgOwYw3LFuDfFnnhiA/WQA13leAMBqDiDPIHo8gIwCj4/ggptnAFHGIbIu/NNBzIxtEJ9YxnKLUgbmBFV
+	OnIR5jT4icoJYaqUR300BSGxngGHme5TGIMrPJwJEHI7IAVgK7sSoyGSaC7mWYzDGZLoLRYDInVg0tPPIqWcAJjaK8gyiUfQzBjbgDBCNYp9jkMmXBc+NaUEoA5QZlAtJMqWpKfv
+	GAaLJbWomPi6DLAZjADNyPy0F012YAZAapkAOYERylkvlmFgAezkmAswKpgMwCj8Sg3JQxwCm+qy4NqbvGBNM08dcmCbX0JlYmAxHjQVxGoPyySkjmmiXXrAcg/LJKaOJAMPU7bw
+	LpZNPcgH2Q1hYhDEXSrGYFER8GXFdMACjIJ6oQkFG9zsgKjA4WYVHAJjWZrrgfpLYMGTRSIOS3cYTgmgx7PdmW/ZkxpkyjgCSzJ8RhSSZmUjjAKP8nMqgkMplgGJuPAJAdmI+eKo
+	cxJMAZsn4hI3Kuo5RLbtQGtmFVOY0Mvm6NdJ9bLSdklyeFJnkwq6SyQA2lYuZNS5bPnFUXoXcXZhAbVrqjrtQppofkwnrBUafjIxPCqBKumeSZutOkpGsScGFkiyjDaVLbN96oyA
+	X80AlY0zGATIZpwHMYJA4w0SpxwQopXYGMDOIxfWxIP6H5UEa7hOoZ+MoBmPaJpnyyWMAlN9E4wCqGMSJhUSdAFBMNCqkqjMoA6T3OL0bUwEmujDNpQzg358HnwDA7PfXvxrgf94
+	F+vqrtwQRiXZwk+imHAzopjfgTzEwUzGQi9J7ef9QfJPseEDkVQLhkS8CjwTJSlUMhE5+6IdzS17l1su3bh98R5Lok8Rer/Z+K9gScqCP6ucldTy5JbeU8LcUKW+3IaguQ37c87f
+	0R3X9kDddkIS1jgxhoyTPwnt1UR08S7rV71bOEmOk/zDRH7NVVzR9EtKrhB4O0H8VN3weh41Yi68QEAVmx8feXb2835V6+ZW+mSmSvKsaf56oRXgUcVfoP8m9BoUA1gLn63cXFH/
+	gFEVrXdKN1xS9inHxECPhIeAF7KwHoXVU/4X2Gj5O75C3pakjDKl5y0nGSmqcFiq5o8QOHWCtdv1gx0RFxJosX0ulzkxwfD3uEMywBvKG3cOm5ljpI3IPH7nxYd2MLZ8dkNYBS7/
+	M3VHnB972cRMHzd3R8jV9VIutFBDIRto6BosPqN/0hZTC8Poz7QEAJPbuNoQVEEricw/TIR+qB1oo3rG7Fus3eKUVrNZFmN9MfbjF/p3q6/k7PL5wsNYgB2CM9PHf//Ztfe/1N6q
+	KOQAMMA6kywyavAnU3wyZ+h3fMdYfshTKHdTXwZ2GHxaA33w7eQAGrWCn4en7Cy6qznaXM7OJv/MmshljAO3HJsqh/gFk1iQ6ntVai46E3tKoibzSiE1HpoLWjKASsDjqvlGFZQU
+	U+w/+by3EyrOXwKrusaGnl4zqxkLTS4gu1OV9+p0FS8zI5aVxfYc39qFX7XYDVPTvjCKgCriO7/E9lO58+lrDnE3mcJusnOxS+TGMwNzHqkrzz2YkLqjZ0JnTS8rvM09cJl1/Je5
+	Us4yXcSfAzfNiOVBzevElpHjAYVHVuBvYK8cDsoHXNS9oCpH/xWh5HAhP+bzmu0Ag/R17PGIEMY4h8gA0a/s2H7oSk+UX1vCNqvR+9jr+8/djcVFWMfkpnt+rX7T3xsirOH2wL9Z
+	+nwELdyicdYnSO0QmU9xV6srRZeq6vDL5hW8r+/gQfS0P8cnhv7HGQdYEiwcmhzu4E1xAsIi6tRDrFlM87HPxYNsYR7dMgISuxh0fQ/BiR+AbY8W+H4u7ur7fDaBLnxF43lJBX/G
+	NEIe4cwIXyaKZAnMsrrOM1W91JEd5uKAHTPu33//RT77bCnyuttrnePANzpKRAZZvm2In2Yk0kflKgNWS8jgAfl+RP4D6PqeJPq7z7Qgg+Kjy2nInyRY6g38NK5zULq/NVWkJVdG
+	t+CyFvxDCH1j9cAmXXN55IARKtVsAqcHzz8X2iL6J8DwKMG++zh4eOdNFZzpnLekRTB+WTGv5Q+kk0/BDIbxB74Pk7V8+pejn93vie5Gp/3okPpErU4Ab8AvSVCtbI+wWvCpalTB
+	vhIJjao/HShK0xvsPMT7oeE5aKHtolMWdohH87hpOR0Xw0mM6AvpygVTmDTjEG9BkLd96UeCAyeINqGpzrbIfcJVwWQ0PQl3Fwhku16Dqhd8QnAG68WIHt9mkB7EhSIAqlzrOSX8
+	NjnQD1AEyVafOr2zOYGEzeEnJvgpatjTCN7Jpy74RRzf8jc8vj2qIHyLrKPDVsLa+8mlubXEOpRHzc8u9i1f15qfEBulfVcPTG0+f5XYK+7c3t7c39aUerZNrbPRHNlpdM42Njqr
+	h7kYKur57offla/TVqzub65XLmzubl+dgQ5e2rhFtP6+vnKsYnDkYYuHa1oXne5sb6hluHWb43jwYVi5furLZY0P9h/nwi6kNwWhLb/Z6dIVo47wh8ByMaPsq9bYv6O110T2N9iw
+	bvlUDSxGwoc8s38WcNtIFnPRrLKyncxj8vmTwoBbekxviM2fQPktZAAwRQnCJnkI/hb6Gfhr9S+hfQEee0XPoHDUkLz2D/jT6IgOE6DX0efSqA6u4Hrjuu+65sd5orpBotGW9QU2
+	Mq8KB8DdCNtoYVrG+wmAtu9wW9QZ37G+2me2yWW/TamOlfZapr7AbzZV2faW9nrqBvas8nrEgC+vthjhNdcq1fwB4YRAuFUEsAwAAAABJRU5ErkJggg=="/>
 <script>
-
-const tetris = {
-	WIDTH: 10, HEIGHT: 18
-};
-
-function init() {
-	tetris.canvas = document.getElementById("tetris");
-	tetris.ctx    = tetris.canvas.getContext("2d");
-	tetris.tick   = 0;
-	tetris.x      = 0;
-	tetris.y      = 0;
-
-	tetris.backdrop = document.createElement("canvas");
-	tetris.backdrop.width = 160;
-	tetris.backdrop.height = 144;
-
-	var scorenxtlv = Uint8Array.from(
-		atob("eMe+e+e/eeeee+/jj/wjzcnH2wwDnnwzzzwzWMwjzMHem++Genewzz+7MMwjzMeHnHzMnfHwz+wvcMwjzM4H/nzcnHnzz0wnyMwWee/+Geeceeeeez/jhM/M"),
-		c=>c.charCodeAt(0)
-	);
-
-	var c = tetris.backdrop.getContext("2d");
+	i = document.images[0]
 	
-	var id = c.getImageData(0,0,160,144);
-	var p = id.data;
+	c = document.createElement("canvas")
+	c.width=i.width; c.height=i.height-80
+	c = c.getContext("2d")
+	c.drawImage(i, 0, -80)
+	p = c.getImageData(0, 0, i.width, i.height-80).data.filter((_,i) => !(i%4))
+	c = document.body.children[0].getContext("2d")
 
-	var idx=0;
-	for (y=0; y<144; y++) for (x=0; x<160; x++)
-	{
-		var col =
-			(x>15&&x<97?11
-			:x>104?x>108&&x<155&&(y>4&&y<19||y>44&&y<67||y>68&&y<101)
-			&&(x>109&&x<154||y>5&&y<18||y>45&&y<66||y>69&&y<100)?(x==110||x==153)
-			&&(y>6&&y<17||y>46&&y<65||y>70&&y<99)||x>110&&x<153
-			&&(y==6||y==17||y==46||y==65||y==70||y==99)||(x==111||x==152)
-			&&(y==7||y==16||y==47||y==64||y==71||y==98)?8:11:y>34||y<13?2:y<23
-			&&y!=21&&y!=13||y==33?5:11:x>7&&x<17||x>95&&x<104?
-				y%6==2||y%6==5||x%4==3-2*(y%6<3)?2:x%4==2&&y%6==0||x%4==0&&y%6==3?11:8:x<7?2:11)<<4;
-		p[idx++] = p[idx++] = p[idx++] = col; p[idx++] = 255;
-	}
+	document.addEventListener("keyup",   function(e) { w.instance.exports.k(e.key.charCodeAt(0), 1); })
+	document.addEventListener("keydown", function(e) { w.instance.exports.k(e.key.charCodeAt(0), 0); })
 
-	var chars = [[10,11,12,13,14],[15,14,16,17],[18,14,19,14,18]];
-	for (r=0; r<3; r++)
-	for (l=0; l<chars[r].length; l++)
-	{
-		var ch = 6*chars[r][l];
-		idx = 113 + (r==0?9:r==1?73:49) * 160;
-		for (y=0; y<6; y++)
-		for (x=0; x<6; x++) {
-			var bit = ch+x+120*y;
-			var idx2 = 4*(8*l+idx+x+160*y);
-			if (scorenxtlv[~~(bit/8)]&(128>>(bit%8)))
-				p[idx2++] = p[idx2++] = p[idx2++] = 0x20;
-		}
-	}
-	
-	c.putImageData(id, 0,0);
-	
-	/* key handlers */
-	window.addEventListener("keydown", function(e) { tetris.key = e.key; }, true);
-	window.addEventListener("keyup", function(e) { if (e.key==tetris.key) tetris.key = 0; }, true);
-	
-	board = Array(tetris.WIDTH).fill().map(() => Array(tetris.HEIGHT).fill(0));
-
-	window.requestAnimationFrame(render);
-}
-
-function render(time) {
-	tetris.ctx.drawImage(tetris.backdrop,0,0);
-	//window.requestAnimationFrame(render);
-}
-
+	WebAssembly.instantiate( p, { env: {
+		d: (x,y,tile)=>{ if (y>=0) c.drawImage(i,8*(tile&7),tile&248,8,8,8*x,8*y,8,8); },
+		r: ()=>{ window.requestAnimationFrame(w.instance.exports.r); },
+	}}).then(
+		o=>{w = o; o.instance.exports.r(Math.random()*0xFFFFFFFF);}
+	)
 </script>
-</head>
-<body onLoad="init()">
-	<canvas id="tetris" width="160" height="144"/>
-</body>
-</html>
