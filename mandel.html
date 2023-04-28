@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mandelbrot set</title>
+
+
+<script src="gl-matrix.js" type="text/javascript"></script>	
+
+<script>
+
+const srcFragmentShader = `
+precision mediump float;
+
+uniform float zoom;
+
+	void main() {
+		const int iters = 120;
+		
+		vec2 c = (gl_FragCoord.xy - vec2(256.0,256.0)) * zoom;
+		
+		c += vec2(-0.235125, 0.827215); // center around this point
+
+		vec2 z = c;
+		
+		int j;
+		for (int i=0; i<iters; ++i)
+		{
+			z = vec2( z.x * z.x - z.y * z.y, z.x * z.y * 2.0 ) + c;
+			j=i;
+			if (abs(z.x * z.y) > 4.0) break;
+		}
+
+		float col = float(j) / float(iters-1);
+		gl_FragColor = vec4(sqrt(sqrt(col)),0.5*sqrt(4.0*col),col*col,1);
+		
+	}
+`;
+
+var canvas, gl, posBuffer, program;
+
+function main()
+{
+	canvas = document.getElementById("glCanvas");
+	gl = canvas.getContext("webgl");
+
+	if (gl == null) {
+		window.alert("WebGL not supported.");
+		return;
+	}
+	
+	gl.clearColor(0,0,1.0,1);
+	gl.clear(gl.COLOR_BUFFER_BIT);
+	
+	/* Compile vertex shader */
+	
+	const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+	gl.shaderSource(vertexShader, "attribute vec4 aVertexPosition; uniform mat4 uModelViewMatrix; uniform mat4 uProjectionMatrix; void main() { gl_Position = aVertexPosition; }");
+	gl.compileShader(vertexShader);	
+
+	if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+		alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertexShader));
+		return;
+	}
+
+	/* Compile fragment shader */	
+
+	const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+	gl.shaderSource(fragmentShader, srcFragmentShader);
+	gl.compileShader(fragmentShader);	
+
+	if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+		alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragmentShader));
+		return;
+	}
+  	
+	/* Create and link program */
+
+	program = gl.createProgram();
+	gl.attachShader(program, vertexShader);
+	gl.attachShader(program, fragmentShader);
+	
+	gl.linkProgram(program);
+	
+	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+		alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(program));
+		return null;
+	}
+	
+	/* Create buffer holding the quad positions */
+	
+	posBuffer = gl.createBuffer();
+	
+	gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+	
+	const positions = [ -1, 1, 1, 1, -1, -1, 1, -1 ];
+	
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+	animate(0);
+}
+
+var frame = 1;
+var zoom = 0.003;
+var dir = 0.99;
+
+function animate(time) {
+
+	const projection = mat4.create();
+	
+
+	// 0.42884 -0.231345
+	
+	const model = mat4.create();
+	
+	frame++;
+	
+	zoom = zoom * dir;
+	
+	if (dir<1 && zoom<0.0000001) dir = 1.01; else if (dir>1 && zoom>0.003) dir=0.99;
+	
+	var zoomLoc = gl.getUniformLocation(program, "zoom");
+	gl.uniform1f(zoomLoc, zoom);
+	
+	gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+	gl.vertexAttribPointer(
+		gl.getAttribLocation(program, "aVertexPosition"),
+		2,
+		gl.FLOAT,
+		false,
+		0,
+		0
+	);
+	gl.enableVertexAttribArray(
+		gl.getAttribLocation(program, "aVertexPosition")
+	);
+	
+	gl.useProgram(program);
+	
+	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+	
+	window.requestAnimationFrame(animate);
+}
+</script>
+</head>
+<body onLoad="main()">
+<canvas style="padding:0;margin:auto;position:absolute;top:0;bottom:0;left:0;right:0" id="glCanvas" width="512" height="512"></canvas>
+</body>
+</html>

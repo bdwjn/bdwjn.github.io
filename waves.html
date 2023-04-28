@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>WebGL</title>
+
+<script src="gl-matrix.js" type="text/javascript"></script>	
+
+<!-- Vertex shader -->
+
+<script id="vertexshader" type="x-shader/x-vertex">
+	precision mediump float;
+	
+	attribute vec3 vertex;
+
+	uniform mat4 matCamera;
+	uniform mat4 matProjection;
+
+	varying vec4 color;
+
+	void main() {
+		gl_Position = matProjection * matCamera * vec4(vertex,1);
+
+		color = vec4 (
+			abs(25.0 - vertex.x) * 0.02,
+			abs(25.0 - vertex.z) * 0.02,
+			0.3 + 0.05 * vertex.y,
+			1.0
+		);
+			
+	}
+</script>
+
+<!-- Fragment shader -->
+
+<script id="fragmentshader" type="x-shader/x-fragment">
+	precision mediump float;
+	
+	varying vec4 color;
+
+	void main() {
+		gl_FragColor = color;
+	}
+</script>
+
+<script type="text/javascript">
+
+var canvas, gl, posBuffer, idxBuffer, program;
+
+var map_verts = [];
+var map_idxs = [];
+var n = 1000;
+
+var buffers = [];
+
+function main()
+{
+	canvas = document.getElementById("glCanvas");
+	gl = canvas.getContext("webgl");
+	
+	if (gl == null) {
+		window.alert("WebGL not supported.");
+		return;
+	}
+	
+	var uints_for_indices = gl.getExtension("OES_element_index_uint");
+
+	
+	/* Compile vertex shader */
+	
+	const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+	gl.shaderSource(vertexShader, document.getElementById("vertexshader").innerHTML);
+	gl.compileShader(vertexShader);	
+
+	if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+		alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertexShader));
+		return;
+	}
+
+	/* Compile fragment shader */	
+
+	const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+	gl.shaderSource(fragmentShader, document.getElementById("fragmentshader").innerHTML);
+	gl.compileShader(fragmentShader);	
+
+	if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+		alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragmentShader));
+		return;
+	}
+  	
+	/* Create and link program */
+
+	program = gl.createProgram();
+	gl.attachShader(program, vertexShader);
+	gl.attachShader(program, fragmentShader);
+	
+	gl.linkProgram(program);
+		
+	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+		alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(program));
+		return null;
+	}
+	
+	gl.useProgram(program);
+	
+	/* Create vertex buffer */
+	
+	buffers[0] = gl.createBuffer();
+	buffers[1] = gl.createBuffer();
+
+	for (var z=0; z<n; z++)
+	{
+		for (var x=0; x<n; x++)
+		{
+			var vx = 80 * (x-n/2) / n;
+			var vy = 5.0   +   2.5 * Math.cos((z-n/2) / n * 2 * Math.PI * 5)   +   2.5 * Math.cos((x-n/2) / n * 2 * Math.PI * 5);
+			var vz = 80 * (z-n/2) / n;
+			
+			map_verts.push( vx );
+			map_verts.push( vy );
+			map_verts.push( vz );
+			
+			if (z!=0) {
+				map_idxs.push(x+n*(z-1));
+				map_idxs.push(x+n*z);
+			}
+		}
+		if (z != 0)
+		{
+			// make the next two tris degenerate
+			map_idxs.push((n-1)+n*z);
+			map_idxs.push(n*z);
+		}
+	}
+	
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffers[0]);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(map_verts), gl.STATIC_DRAW);
+
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers[1]);
+	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(map_idxs), gl.STATIC_DRAW);
+
+	/* Pass the vertex position to the shader */
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffers[0]);
+	
+	gl.vertexAttribPointer(
+		gl.getAttribLocation(program, "vertex"),
+		3,
+		gl.FLOAT,
+		false,
+		0,
+		0
+	);
+	gl.enableVertexAttribArray(
+		gl.getAttribLocation(program, "vertex")
+	);
+	
+	gl.enable(gl.DEPTH_TEST);
+	
+	animate(0);
+}
+
+var frame = 0;
+
+var prev = 0;
+
+var aspect = 2.0;
+
+function animate(time) {
+	const matrix = mat4.create();
+	
+	frame++;
+	
+	/* Set up camera matrix */
+	
+	var camera = [ 100*Math.sin(0.01*frame), 40, 100*Math.cos(0.01*frame) ];
+	var target = [ 0, 0, 0 ];
+	var up     = [ 0, 1, 0 ];
+
+	mat4.lookAt(matrix, camera, target, up);
+	gl.uniformMatrix4fv( gl.getUniformLocation(program, "matCamera"), false, matrix);
+
+	/* Set up perspective matrix */
+	
+	mat4.perspective(matrix, 0.8 /*fovy*/, aspect, 0.5 /*near*/, 2000 /*far*/);
+	gl.uniformMatrix4fv( gl.getUniformLocation(program, "matProjection"), false, matrix);
+
+	/* Render */
+	
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers[1]);
+
+	gl.drawElements(gl.TRIANGLE_STRIP, map_idxs.length, gl.UNSIGNED_INT, 0);
+
+	/* Output framerate every 60 frames */
+	if (frame % 60 == 0)
+	{
+		document.getElementById("time").innerHTML = ""+Math.round(60000/(time-prev)) + " fps";
+		prev = time;
+	}
+
+	
+	window.requestAnimationFrame(animate);
+	
+	//animate(0);
+}
+
+</script>
+<style>th{text-align:right}</style>
+
+</head>
+<body onLoad="main()" style="background-color:black;color:white;padding:0;margin:0">
+<canvas style="z-index:-1;width:1024px;height:512px;padding:0;margin:0;position:absolute;" id="glCanvas" width="1024" height="512"></canvas>
+<div style="z-index:999">
+<table>
+<tr><th><label for="check">Animate</label>:<td><input type="checkbox" id="check" checked/></tr>
+<tr><th>Framerate:<td><div id="time">.</div>
+</div>
+</body>
+</html>
