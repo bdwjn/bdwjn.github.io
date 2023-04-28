@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Weird blob thing</title>
+
+
+<script src="gl-matrix.js" type="text/javascript"></script>	
+
+<script>
+
+const srcFragmentShader = `
+precision mediump float;
+
+uniform vec2 blob1, blob2, blob3;
+
+	void main() {
+		float dist1 = sqrt( abs((gl_FragCoord.x - blob1.x) * (gl_FragCoord.x - blob1.x)) + abs((gl_FragCoord.y - blob1.y) * (gl_FragCoord.y - blob1.y)) );
+		float dist2 = sqrt( abs((gl_FragCoord.x - blob2.x) * (gl_FragCoord.x - blob2.x)) + abs((gl_FragCoord.y - blob2.y) * (gl_FragCoord.y - blob2.y)) );
+		float dist3 = sqrt( abs((gl_FragCoord.x - blob3.x) * (gl_FragCoord.x - blob3.x)) + abs((gl_FragCoord.y - blob3.y) * (gl_FragCoord.y - blob3.y)) );
+		
+		bool close = (dist1+dist2+dist3) < 300.0;
+		
+		//gl_FragColor = vec4(0.5,0.5,1.0,0.7);
+		
+		gl_FragColor = vec4(
+			clamp( close ? 0.015 * dist1 : 0.008 * dist1, 0.0, 1.0),
+			clamp( close ? 0.015 * dist2 : 0.008 * dist2, 0.0, 1.0),
+			clamp( close ? 0.015 * dist3 : 0.008 * dist3, 0.0, 1.0),
+			max(0.0, (500.0-dist1-dist2-dist3)/30.0)
+		);
+	}
+`;
+
+var canvas, gl, posBuffer, program;
+
+function main()
+{
+	/* Calculate Fibonacci in WASM */
+	WebAssembly
+		.instantiate(
+			Uint8Array.from(
+				atob("AGFzbQEAAAABCQJgAX8AYAABfwIJAQJqcwJkdwAAAwIBAQcHAQNmaWIAAQopAScBAn9BASIAIQEDQCAAEAAgACABaiABIQAiAUGN4LfdAEgNAAtBAAs="),
+				c=>c.charCodeAt(0)
+			),
+			{ js: { dw: x=>document.getElementById("fibo").innerText+=x+((Math.random()<0.8)?"→":"→\n") } }
+		)
+		.then( obj => { obj.instance.exports.fib(); } );
+	
+	canvas = document.getElementById("glCanvas");
+	gl = canvas.getContext("webgl");
+
+	if (gl == null) {
+		document.write("WebGL not supported.");
+		return;
+	}
+	
+	/* Compile vertex shader */
+	
+	const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+	gl.shaderSource(vertexShader, "attribute vec4 aVertexPosition; uniform mat4 uModelViewMatrix; uniform mat4 uProjectionMatrix; void main() { gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition; }");
+	gl.compileShader(vertexShader);	
+
+	if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+		alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertexShader));
+		return;
+	}
+
+	/* Compile fragment shader */	
+
+	const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+	gl.shaderSource(fragmentShader, srcFragmentShader);
+	gl.compileShader(fragmentShader);	
+
+	if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+		alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragmentShader));
+		return;
+	}
+  	
+	/* Create and link program */
+
+	program = gl.createProgram();
+	gl.attachShader(program, vertexShader);
+	gl.attachShader(program, fragmentShader);
+	
+	gl.linkProgram(program);
+	
+	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+		alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(program));
+		return null;
+	}
+	
+	/* Create buffer holding the quad positions */
+	
+	posBuffer = gl.createBuffer();
+	
+	gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+	
+	const positions = [ -1, 1, 1, 1, -1, -1, 1, -1 ];
+	
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+	
+	gl.enable(gl.BLEND);
+	gl.blendFunc(gl.SRC_ALPHA, gl.DST_ALPHA);
+
+	animate(0);
+}
+
+var frame = 0;
+
+function animate(time) {
+
+	const projection = mat4.create();
+	mat4.ortho(projection, -1.0, 1, -1, 1, -10, 10);
+	
+	const model = mat4.create();
+	//mat4.translate(model, model, [0,0,-3]);
+	
+	gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+	gl.vertexAttribPointer(
+		gl.getAttribLocation(program, "aVertexPosition"),
+		2,
+		gl.FLOAT,
+		false,
+		0,
+		0
+	);
+	gl.enableVertexAttribArray(
+		gl.getAttribLocation(program, "aVertexPosition")
+	);
+	
+	gl.useProgram(program);
+	
+	frame += .3;
+	
+	var blobLoc = gl.getUniformLocation(program, "blob1");
+	gl.uniform2fv(blobLoc, [256+80*Math.sin(frame/3.1), 256+80*Math.cos(frame/4.5)]);
+
+	blobLoc = gl.getUniformLocation(program, "blob2");
+	gl.uniform2fv(blobLoc, [256+80*Math.sin(frame/4.1), 256+80*Math.cos(frame/2.5)]);
+
+	blobLoc = gl.getUniformLocation(program, "blob3");
+	gl.uniform2fv(blobLoc, [256+80*Math.sin(frame/5.1), 256+80*Math.cos(frame/3.5)]);
+	
+	gl.uniformMatrix4fv(
+	  	gl.getUniformLocation(program, "uProjectionMatrix"),
+	  	false,
+	  	projection
+	);
+	
+	gl.uniformMatrix4fv(
+	  	gl.getUniformLocation(program, "uModelViewMatrix"),
+	  	false,
+	  	model
+	);
+	
+	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+	
+	window.requestAnimationFrame(animate);
+}
+</script>
+</head>
+<body onLoad="main()" style="overflow:hidden">
+<div id="fibo" style="text-align:center;font-family:sans-serif;font-size:50pt;color:#8899aa;overflow-wrap:break-word"></div>
+<canvas style="padding:0;margin:auto;position:absolute;top:0;bottom:0;left:0;right:0" id="glCanvas" width="512" height="512"></canvas>
+</body>
+</html>
